@@ -1,0 +1,23 @@
+idf_component_register(
+    SRCS
+        "main.c"
+        "device_monitor/device_monitor.c"
+        "wifi_manager/wifi_manager.c"
+        "telemetry/telemetry.c"
+        "http_client/http_client.c"
+
+    INCLUDE_DIRS
+        "."
+        "device_monitor"
+        "wifi_manager"
+        "telemetry"
+        "http_client"
+        PRIV_REQUIRES
+        spi_flash
+        esp_timer
+        esp_wifi
+        esp_event
+        esp_netif
+        nvs_flash
+        esp_http_client
+)
