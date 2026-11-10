@@ -11,17 +11,13 @@ class DeviceAnomalyDetector:
 
     def __init__(self):
 
-        # Get ML project directory
         self.model_dir = Path(__file__).resolve().parent.parent / "models"
 
-        # Model file paths
         self.model_path = self.model_dir / "isolation_forest.pkl"
         self.scaler_path = self.model_dir / "scaler.pkl"
 
-        # Initialize StandardScaler
         self.scaler = StandardScaler()
 
-        # Initialize Isolation Forest
         self.model = IsolationForest(
             n_estimators=100,
             contamination=0.02,
@@ -30,13 +26,16 @@ class DeviceAnomalyDetector:
 
         self.is_trained = False
 
-    # Train ML model
+    # Train model using training data
     def train(self, features: pd.DataFrame):
 
         if features.empty:
             raise ValueError("Training dataset is empty!")
 
-        # Scale input features
+        if len(features) < 2:
+            raise ValueError("At least two training records are required!")
+
+        # Fit scaler only on training data
         scaled_features = self.scaler.fit_transform(features)
 
         # Train Isolation Forest
@@ -46,29 +45,22 @@ class DeviceAnomalyDetector:
 
         print("Isolation Forest model trained successfully!")
 
-        # Automatically save model
         self.save_model()
 
-    # Save trained model and scaler
+    # Save model and scaler
     def save_model(self):
 
         if not self.is_trained:
             raise RuntimeError("Model must be trained before saving!")
 
-        # Create models directory if it does not exist
         self.model_dir.mkdir(parents=True, exist_ok=True)
 
-        # Save Isolation Forest model
         joblib.dump(self.model, self.model_path)
-
-        # Save StandardScaler
         joblib.dump(self.scaler, self.scaler_path)
 
         print("\nML model saved successfully!")
-        print(f"Model: {self.model_path}")
-        print(f"Scaler: {self.scaler_path}")
 
-    # Load previously trained model
+    # Load trained model
     def load_model(self):
 
         if not self.model_path.exists():
@@ -77,11 +69,9 @@ class DeviceAnomalyDetector:
         if not self.scaler_path.exists():
             raise FileNotFoundError("Trained scaler not found!")
 
-        # Load saved objects
         self.model = joblib.load(self.model_path)
         self.scaler = joblib.load(self.scaler_path)
 
-        # Verify loaded objects
         check_is_fitted(self.model)
         check_is_fitted(self.scaler)
 
@@ -89,22 +79,22 @@ class DeviceAnomalyDetector:
 
         print("ML model and scaler loaded successfully!")
 
-    # Detect anomalies
+    # Predict anomalies
     def predict(self, features: pd.DataFrame):
 
         if not self.is_trained:
             raise RuntimeError("Train or load the model before prediction!")
 
-        # Apply previously fitted scaler
+        if features.empty:
+            raise ValueError("Prediction dataset is empty!")
+
+        # Use previously fitted scaler
         scaled_features = self.scaler.transform(features)
 
-        # Predict anomalies
         predictions = self.model.predict(scaled_features)
 
-        # Calculate anomaly scores
         scores = self.model.decision_function(scaled_features)
 
-        # Prepare results
         results = features.copy()
 
         results["anomaly"] = predictions
