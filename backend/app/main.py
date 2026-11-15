@@ -5,13 +5,20 @@ from sqlalchemy.orm import Session
 from app.services.ml_service import ml_health_service
 from app.database import engine, Base, get_db
 from app.models import DeviceTelemetry as TelemetryModel
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="ESP32 Device Health Monitor API",
     description="Backend API for ESP32 device telemetry",
     version="1.0.0",
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Automatically create database tables
 Base.metadata.create_all(bind=engine)
@@ -97,6 +104,44 @@ def receive_telemetry(data: DeviceTelemetry, db: Session = Depends(get_db)):
         db.rollback()
 
         raise HTTPException(status_code=500, detail=str(error))
+
+
+# Get all registered devices
+@app.get("/api/v1/devices")
+def get_all_devices(db: Session = Depends(get_db)):
+
+    device_ids = db.query(TelemetryModel.device_id).distinct().all()
+
+    devices = []
+
+    for item in device_ids:
+        device_id = item[0]
+
+        telemetry = (
+            db.query(TelemetryModel)
+            .filter(TelemetryModel.device_id == device_id)
+            .order_by(TelemetryModel.created_at.desc(), TelemetryModel.id.desc())
+            .first()
+        )
+
+        if telemetry is None:
+            continue
+
+        health = ml_health_service.analyze_device(telemetry)
+
+        devices.append(
+            {
+                "device_id": device_id,
+                "health": health,
+                "telemetry": format_telemetry(telemetry),
+            }
+        )
+
+    return {
+        "success": True,
+        "total_devices": len(devices),
+        "devices": devices,
+    }
 
 
 # Get latest device status

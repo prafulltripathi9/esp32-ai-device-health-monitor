@@ -13,7 +13,7 @@
 static const char *TAG = "MAIN";
 
 
-#define BACKEND_URL "http://10.157.170.254:8000/api/v1/telemetry"
+#define BACKEND_URL "http://192.168.1.81:8000/api/v1/telemetry"
 
 static const char *get_reset_reason_name(esp_reset_reason_t reason)
 {
