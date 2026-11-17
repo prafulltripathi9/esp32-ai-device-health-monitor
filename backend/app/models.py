@@ -5,39 +5,83 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     BigInteger,
-    func
+    Index,
+    func,
 )
 
 from app.database import Base
 
 
 class DeviceTelemetry(Base):
-
     __tablename__ = "device_telemetry"
 
-    id = Column(Integer, primary_key=True, index=True)
+    __table_args__ = (
+        Index(
+            "ix_device_telemetry_device_created",
+            "device_id",
+            "created_at",
+        ),
+    )
 
-    device_id = Column(String(50), nullable=False, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
 
-    uptime_seconds = Column(BigInteger, nullable=False)
+    device_id = Column(
+        String(50),
+        nullable=False,
+        index=True,
+    )
 
-    free_heap = Column(BigInteger, nullable=False)
+    uptime_seconds = Column(
+        BigInteger,
+        nullable=False,
+    )
 
-    minimum_free_heap = Column(BigInteger, nullable=False)
+    free_heap = Column(
+        BigInteger,
+        nullable=False,
+    )
 
-    largest_free_block = Column(BigInteger, nullable=False)
+    minimum_free_heap = Column(
+        BigInteger,
+        nullable=False,
+    )
 
-    reset_reason = Column(String(50), nullable=False)
+    largest_free_block = Column(
+        BigInteger,
+        nullable=False,
+    )
 
-    wifi_connected = Column(Boolean, nullable=False)
+    reset_reason = Column(
+        String(50),
+        nullable=False,
+    )
 
-    wifi_ssid = Column(String(32), nullable=True)
+    wifi_connected = Column(
+        Boolean,
+        nullable=False,
+    )
 
-    wifi_rssi = Column(Integer, nullable=False)
+    wifi_ssid = Column(
+        String(32),
+        nullable=True,
+    )
 
-    wifi_reconnect_count = Column(Integer, nullable=False)
+    wifi_rssi = Column(
+        Integer,
+        nullable=False,
+    )
+
+    wifi_reconnect_count = Column(
+        Integer,
+        nullable=False,
+    )
 
     created_at = Column(
         DateTime,
-        server_default=func.now()
+        server_default=func.now(),
+        nullable=False,
     )

@@ -1,7 +1,51 @@
+import math
 import pandas as pd
 
 
 def check_device_health(telemetry: pd.DataFrame):
+
+    if not isinstance(telemetry, pd.DataFrame):
+        raise TypeError("Telemetry must be a pandas DataFrame.")
+
+    if telemetry.empty:
+        raise ValueError("Telemetry data cannot be empty.")
+
+    required_columns = [
+        "free_heap",
+        "wifi_rssi",
+        "wifi_reconnect_count",
+    ]
+
+    missing_columns = [
+        column
+        for column in required_columns
+        if column not in telemetry.columns
+    ]
+
+    if missing_columns:
+        raise ValueError(
+            f"Missing telemetry columns: {missing_columns}"
+        )
+
+    # Validate required numeric fields
+    for column in required_columns:
+
+        if not pd.api.types.is_numeric_dtype(telemetry[column]):
+            raise ValueError(
+                f"Telemetry column '{column}' must be numeric."
+            )
+
+        if telemetry[column].isnull().any():
+            raise ValueError(
+                f"Telemetry column '{column}' contains missing values."
+            )
+
+        if not telemetry[column].map(
+            lambda value: math.isfinite(float(value))
+        ).all():
+            raise ValueError(
+                f"Telemetry column '{column}' contains invalid values."
+            )
 
     results = []
 
@@ -39,7 +83,10 @@ def check_device_health(telemetry: pd.DataFrame):
 
         results.append({
             "health_status": status,
-            "issues": issues
+            "issues": issues,
         })
 
-    return pd.DataFrame(results, index=telemetry.index)
+    return pd.DataFrame(
+        results,
+        index=telemetry.index,
+    )

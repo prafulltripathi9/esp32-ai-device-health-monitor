@@ -1,6 +1,15 @@
+import logging
+
 from data_loader import fetch_telemetry
 from preprocessing import prepare_features
 from anomaly_detector import DeviceAnomalyDetector
+
+
+logger = logging.getLogger(__name__)
+
+DEVICE_ID = "ESP32_001"
+TRAIN_RATIO = 0.80
+MINIMUM_RECORDS = 10
 
 
 def main():
@@ -8,11 +17,10 @@ def main():
     # Step 1: Fetch ESP32 telemetry
     print("\nFetching ESP32 telemetry...")
 
-    df = fetch_telemetry("ESP32_001")
+    df = fetch_telemetry(DEVICE_ID)
 
     if df.empty:
-        print("No telemetry records found!")
-        return
+        raise ValueError("No telemetry records found!")
 
     print(f"Total telemetry records: {len(df)}")
 
@@ -21,16 +29,25 @@ def main():
 
     features = prepare_features(df)
 
-    if len(features) < 10:
-        raise ValueError("Insufficient data for training and testing!")
+    if len(features) < MINIMUM_RECORDS:
+        raise ValueError(
+            f"At least {MINIMUM_RECORDS} records are required "
+            "for training and testing."
+        )
 
     print(f"Total ML features: {features.shape[1]}")
+    print(f"Feature columns: {features.columns.tolist()}")
 
     # Step 3: Chronological 80:20 split
-    split_index = int(len(features) * 0.80)
+    split_index = int(len(features) * TRAIN_RATIO)
 
     train_features = features.iloc[:split_index].copy()
     test_features = features.iloc[split_index:].copy()
+
+    if train_features.empty or test_features.empty:
+        raise ValueError(
+            "Training or testing dataset is empty."
+        )
 
     print("\n========== DATASET SPLIT ==========")
 
@@ -49,31 +66,42 @@ def main():
 
     results = detector.predict(test_features)
 
+    if results.empty:
+        raise ValueError("Model returned empty test predictions.")
+
     print("\n========== TEST RESULTS ==========")
 
     print(results["status"].value_counts())
 
-    print("\nAnomaly Percentage:")
+    # Calculate detected anomaly percentage
+    anomaly_count = (results["anomaly"] == -1).sum()
 
     anomaly_percentage = (
-        (results["anomaly"] == -1).sum() / len(results)
+        anomaly_count / len(results)
     ) * 100
 
-    print(f"{anomaly_percentage:.2f}%")
+    print("\n========== ANOMALY SUMMARY ==========")
+
+    print(f"Total test records: {len(results)}")
+    print(f"Detected anomalies: {anomaly_count}")
+    print(f"Detected normal records: {len(results) - anomaly_count}")
+    print(f"Anomaly percentage: {anomaly_percentage:.2f}%")
 
     print("\nLatest 10 Predictions:")
 
+    display_columns = [
+        "free_heap",
+        "minimum_free_heap",
+        "wifi_rssi",
+        "wifi_reconnect_count",
+        "anomaly_score",
+        "status",
+    ]
+
     print(
-        results[
-            [
-                "free_heap",
-                "minimum_free_heap",
-                "wifi_rssi",
-                "wifi_reconnect_count",
-                "anomaly_score",
-                "status",
-            ]
-        ].tail(10).to_string(index=False)
+        results[display_columns]
+        .tail(10)
+        .to_string(index=False)
     )
 
     print("\nML training and testing completed successfully!")
