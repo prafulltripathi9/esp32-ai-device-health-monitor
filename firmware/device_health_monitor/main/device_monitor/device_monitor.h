@@ -4,21 +4,23 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include"esp_err.h"
-#include"esp_system.h"
+#include "esp_err.h"
+#include "esp_system.h"
+
+/* ================= DEVICE HEALTH DATA ================= */
 
 typedef struct
 {
-    // Memory Metrics
+    /* Memory Metrics */
     uint32_t free_heap;
     uint32_t minimum_free_heap;
     uint32_t largest_free_block;
 
-    // System Metrics
+    /* System Metrics */
     uint64_t uptime_seconds;
     esp_reset_reason_t reset_reason;
 
-    // Wi-Fi Metrics
+    /* Wi-Fi Metrics */
     bool wifi_connected;
     int8_t wifi_rssi;
     char wifi_ssid[33];
@@ -26,8 +28,15 @@ typedef struct
 
 } device_health_data_t;
 
+
+/* ================= DEVICE MONITOR APIs ================= */
+
+/* Initialize device monitoring */
 esp_err_t device_monitor_init(void);
 
-esp_err_t  device_monitor_get_health(device_health_data_t *health_data);
+/* Collect device health metrics */
+esp_err_t device_monitor_get_health(
+    device_health_data_t *health_data
+);
 
-#endif //DEVICE_MONITOR_H
+#endif /* DEVICE_MONITOR_H */

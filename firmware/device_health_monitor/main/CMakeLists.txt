@@ -12,7 +12,9 @@ idf_component_register(
         "wifi_manager"
         "telemetry"
         "http_client"
-        PRIV_REQUIRES
+        "system_config"
+
+    PRIV_REQUIRES
         spi_flash
         esp_timer
         esp_wifi
